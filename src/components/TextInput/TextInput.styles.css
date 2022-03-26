@@ -1,0 +1,11 @@
+.text-input-container{
+    width: 100%;
+    font-size: 30px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 10px;
+}
+
+.text-input-container:focus{
+    outline: 0;
+}
