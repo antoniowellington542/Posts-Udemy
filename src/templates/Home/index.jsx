@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import {useEffect, useState, useCallback } from 'react';
 
 import './styles.css';
 
@@ -7,98 +7,75 @@ import { loadPosts } from '../../utilitys/load-posts';
 import { Button } from '../../components/Button/Button';
 import { TextInput } from '../../components/TextInput/TextInput';
 
-export class Home extends Component {
+export const Home = ()=>{
 
   //ESTADOS GLOBAIS DO MEU CODIGO
-  state = {
-    posts: [],
-    allPosts: [],
-    page: 0,
-    postsPerPage: 10,
-    searchValue: ''
-  }
-
-  //COMPONENT DIDMOUNT QUE EXECUTA TODA VEZ QUE O ESTADO É ALTERADO
-  async componentDidMount() {
-    await this.loadPosts();
-  }
+  const [posts, setPosts] = useState([]);
+  const [allPosts, setAllPosts] = useState([]);
+  const [page, setPage] = useState(0);
+  const [postsPerPage] = useState(10);
+  const [searchValue, setSearchValue] = useState("");
+  
 
   //FUNÇAO ASSINCRONA QUE CARREGA OS DADOS DA REQUISIÇAO DAS IMAGENS E POSTS
-  loadPosts = async () => {
-    
-
-    const {page, postsPerPage} = this.state;
-    
+  const handleLoadPosts = useCallback( async (page,postsPerPage) => {
     const postAndPhotos = await loadPosts();
-    
-    this.setState({
-      posts: postAndPhotos.slice(page, postsPerPage),
-      allPosts: postAndPhotos,
-    });
+    setPosts(postAndPhotos.slice(page, postsPerPage));
+    setAllPosts(postAndPhotos);
+  }, [])
 
-  }
+  //COMPONENT USEEFFECT QUE EXECUTA TODA VEZ QUE O ESTADO É ALTERADO
+  useEffect(()=>{
+    handleLoadPosts(0,postsPerPage);
+  },[handleLoadPosts, postsPerPage])
 
   //FUNÇAO QUE CARREGA MAIS CARDS NA TELA
-  loadMorePosts = () =>{
-    
-    const {
-      page,
-      postsPerPage,
-      allPosts,
-      posts
-    } = this.state;
-
+  const loadMorePosts = () =>{
     const nextPage = page + postsPerPage;
     const nextPosts = allPosts.slice(nextPage, nextPage + postsPerPage);
-
     posts.push(...nextPosts);
-
-    this.setState({posts, page: nextPage})
-
+    setPosts(posts);
+    setPage(nextPage);
   }
 
-  //FUNÇAO QUE EXECUTA TODA VEZ QUE O VALOR DO INPUT É ALTERADO
-  handleChange = (e) =>{
+  //FUNÇAO QUE ALTERA O VALOR DO INPUT
+  const handleChange = (e) =>{
     const { value } = e.target;
-    this.setState({searchValue: value});
+    setSearchValue(value);
   }
 
-  //FUNÇAO RENDER 
-  render() {
+  //VARIAVEIS QUE LIMITA NUMERO DE POSTS POR PAGINA
+  const noMorePosts = page + postsPerPage >= allPosts.length;
 
-    //VARIAVEIS
-    const { posts,  page, postsPerPage, allPosts,searchValue } = this.state;
-    const  noMorePosts = page + postsPerPage >= allPosts.length;
-    
-    //CONDIÇAO PARA FILTRAR OS POSTS DE ACORDO COM O INPUT DIGITADO
-    const filteredPosts = !!searchValue ? 
-      posts.filter(post =>{
+  //CONDIÇAO PARA FILTRAR OS POSTS DE ACORDO COM O INPUT DIGITADO
+  const filteredPosts = !!searchValue ? 
+      allPosts.filter(post =>{
         return post.title.toLowerCase().includes(
-          searchValue.toLowerCase()
-        );
-      })
-      : posts;
+        searchValue.toLowerCase()
+      );
+    })
+  : posts;
 
-    return (
-      //CONTAINER CONTENDO OS POSTS
-      <section className="container">
-        <div className="search-container">
-          {/*INPUT USADO PRA REALIZAR PESQUISA*/}
-          <TextInput searchValue={searchValue} handleChange={this.handleChange} />
-        </div>
-        {/*CONDIÇAO QUE MOSTRA OS POSTS NA TELA CASO A QUANTIDADE SEJA MAIOR QUE 0*/}
-        <Posts posts={ filteredPosts }/>
-        {/*BOTÃO QUE CARREGA MAIS POSTS AO SER ACIONADO */}
-        <div className="button-container">
-          <Button
-            searchValue={searchValue}
-            text="Load more posts"
-            onClick={this.loadMorePosts}
-            disabled={noMorePosts}  
-          /> 
-        </div>
-      </section>
-    );
-  }
+  //RETORNO DO COMPONENTE
+  return (
+    //CONTAINER CONTENDO OS POSTS
+    <section className="container">
+      <div className="search-container">
+        {/*INPUT USADO PRA REALIZAR PESQUISA*/}
+        <TextInput searchValue={searchValue} handleChange={handleChange} />
+      </div>
+      {/*CONDIÇAO QUE MOSTRA OS POSTS NA TELA CASO A QUANTIDADE SEJA MAIOR QUE 0*/}
+      <Posts posts={ filteredPosts }/>
+      {/*BOTÃO QUE CARREGA MAIS POSTS AO SER ACIONADO */}
+      <div className="button-container">
+        <Button
+          searchValue={searchValue}
+          text="Load more posts"
+          onClick={loadMorePosts}
+          disabled={noMorePosts}  
+        /> 
+      </div>
+    </section>
+  );
 }
 
